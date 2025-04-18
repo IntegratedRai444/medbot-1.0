@@ -1,0 +1,211 @@
+import tkinter as tk
+from tkinter import scrolledtext, ttk
+import re
+import time
+import random
+
+class MedBot:
+    def __init__(self, root):
+        self.root = root
+        self.root.title("MedBot - Healthcare Assistant")
+        self.root.geometry("700x600")
+        self.root.configure(bg="#f0f4f8")
+        self.root.resizable(True, True)
+
+        # Set icon (would be replaced with a real icon in production)
+        # self.root.iconbitmap("medbot_icon.ico")
+
+        # Create a style
+        self.style = ttk.Style()
+        self.style.configure("TFrame", background="#f0f4f8")
+        self.style.configure("TButton",
+                            background="#4a86e8",
+                            foreground="black",
+                            font=("Arial", 10, "bold"),
+                            borderwidth=0)
+        self.style.map("TButton",
+                     background=[('active', '#2a5db0')])
+
+        # Main frame
+        main_frame = ttk.Frame(root)
+        main_frame.pack(fill=tk.BOTH, expand=True, padx=20, pady=20)
+
+        # Header
+        header_frame = ttk.Frame(main_frame)
+        header_frame.pack(fill=tk.X, pady=(0, 15))
+
+        logo_label = tk.Label(header_frame, text="🩺", font=("Arial", 28), bg="#f0f4f8")
+        logo_label.pack(side=tk.LEFT, padx=(0, 10))
+
+        title_label = tk.Label(header_frame,
+                              text="MedBot",
+                              font=("Arial", 24, "bold"),
+                              fg="#2a5db0",
+                              bg="#f0f4f8")
+        title_label.pack(side=tk.LEFT)
+
+        subtitle_label = tk.Label(header_frame,
+                                 text="Healthcare Information Assistant",
+                                 font=("Arial", 12),
+                                 fg="#666666",
+                                 bg="#f0f4f8")
+        subtitle_label.pack(side=tk.LEFT, padx=(10, 0), pady=(10, 0))
+
+        # Chat display area
+        self.chat_display = scrolledtext.ScrolledText(main_frame,
+                                                    wrap=tk.WORD,
+                                                    font=("Arial", 11),
+                                                    width=70,
+                                                    height=20,
+                                                    bg="white",
+                                                    bd=1,
+                                                    relief=tk.SOLID)
+        self.chat_display.pack(fill=tk.BOTH, expand=True, pady=(0, 10))
+        self.chat_display.config(state=tk.DISABLED)
+
+        # Input area
+        input_frame = ttk.Frame(main_frame)
+        input_frame.pack(fill=tk.X, pady=(5, 0))
+
+        self.user_input = tk.Text(input_frame,
+                                  height=3,
+                                  wrap=tk.WORD,
+                                  font=("Arial", 11),
+                                  bd=1,
+                                  relief=tk.SOLID)
+        self.user_input.pack(side=tk.LEFT, fill=tk.X, expand=True)
+        self.user_input.bind("<Return>", self.on_enter_pressed)
+        self.user_input.focus_set()
+
+        send_button = ttk.Button(input_frame,
+                               text="Send",
+                               command=self.send_message)
+        send_button.pack(side=tk.RIGHT, padx=(10, 0), pady=5)
+
+        # Disclaimer
+        disclaimer_frame = ttk.Frame(main_frame)
+        disclaimer_frame.pack(fill=tk.X, pady=(15, 0))
+
+        disclaimer_text = "⚠️ This is not a substitute for professional medical advice. Please consult a licensed healthcare provider for proper diagnosis and treatment."
+        disclaimer_label = tk.Label(disclaimer_frame,
+                                  text=disclaimer_text,
+                                  font=("Arial", 9, "italic"),
+                                  fg="#d32f2f",
+                                  wraplength=650,
+                                  justify=tk.LEFT,
+                                  bg="#f0f4f8")
+        disclaimer_label.pack(fill=tk.X)
+
+        # Initial greeting
+        self.display_bot_message("Hello! I'm MedBot, your virtual healthcare assistant. I can provide general medical information and guidance. How can I help you today?")
+
+    def on_enter_pressed(self, event):
+        # Don't add a new line when Enter is pressed
+        self.send_message()
+        return "break"
+
+    def send_message(self):
+        message = self.user_input.get("1.0", tk.END).strip()
+        if message:
+            self.display_user_message(message)
+            self.user_input.delete("1.0", tk.END)
+            self.process_user_input(message)
+
+    def display_user_message(self, message):
+        self.chat_display.config(state=tk.NORMAL)
+        if self.chat_display.get("1.0", tk.END).strip():
+            self.chat_display.insert(tk.END, "\n\n")
+        self.chat_display.insert(tk.END, "You: ", "user_tag")
+        self.chat_display.insert(tk.END, message)
+        self.chat_display.tag_configure("user_tag", foreground="#2a5db0", font=("Arial", 11, "bold"))
+        self.chat_display.see(tk.END)
+        self.chat_display.config(state=tk.DISABLED)
+        self.root.update()
+
+    def display_bot_message(self, message):
+        self.chat_display.config(state=tk.NORMAL)
+        if self.chat_display.get("1.0", tk.END).strip():
+            self.chat_display.insert(tk.END, "\n\n")
+        self.chat_display.insert(tk.END, "MedBot: ", "bot_tag")
+
+        # Create typing effect
+        self.chat_display.tag_configure("bot_tag", foreground="#d32f2f", font=("Arial", 11, "bold"))
+        self.chat_display.see(tk.END)
+        self.chat_display.config(state=tk.DISABLED)
+        self.root.update()
+
+        # Simulate typing with random delays between words
+        words = message.split()
+        self.chat_display.config(state=tk.NORMAL)
+        for i, word in enumerate(words):
+            # Add space before words (except the first one)
+            if i > 0:
+                self.chat_display.insert(tk.END, " ")
+
+            self.chat_display.insert(tk.END, word)
+            self.chat_display.see(tk.END)
+            self.chat_display.config(state=tk.DISABLED)
+            self.root.update()
+
+            # Random delay between words
+            time.sleep(random.uniform(0.05, 0.15))
+
+        self.chat_display.config(state=tk.DISABLED)
+
+    def process_user_input(self, user_input):
+        user_input = user_input.lower()
+
+        # Simple keyword matching
+        if any(word in user_input for word in ["hello", "hi", "hey", "greetings"]):
+            response = "Hello! How can I assist you with your health questions today?"
+
+        elif any(word in user_input for word in ["fever", "temperature", "hot"]):
+            response = "Fever is often a sign that your body is fighting an infection. For mild fevers (below 102°F/38.9°C):\n\n• Rest and stay hydrated\n• Take acetaminophen or ibuprofen if needed\n• Use lightweight clothing and blankets\n\nSeek medical attention if:\n• Fever is above 103°F/39.4°C\n• Lasts more than 3 days\n• Accompanied by severe headache, stiff neck, shortness of breath, or confusion"
+
+        elif any(word in user_input for word in ["headache", "migraine", "head pain"]):
+            response = "Headaches can have many causes including stress, dehydration, or tension. For general headache relief:\n\n• Rest in a quiet, dark room\n• Stay hydrated\n• Apply a cool compress to your forehead\n• Consider over-the-counter pain relievers if appropriate\n\nSeek medical attention if your headache is sudden and severe, accompanied by fever, confusion, weakness, or follows a head injury."
+
+        elif any(word in user_input for word in ["cold", "flu", "cough", "sneeze", "congestion"]):
+            response = "For cold and flu symptoms:\n\n• Rest and get plenty of sleep\n• Stay hydrated with water, tea, or soup\n• Use over-the-counter decongestants or cough suppressants as needed\n• Consider a humidifier to ease congestion\n\nContact a healthcare provider if symptoms are severe, last more than 10 days, or if you have difficulty breathing, persistent chest pain, or confusion."
+
+        elif any(word in user_input for word in ["covid", "coronavirus"]):
+            response = "Common COVID-19 symptoms include fever, cough, fatigue, and loss of taste or smell. If you suspect COVID-19:\n\n• Self-isolate to prevent spreading the virus\n• Rest and stay hydrated\n• Monitor your symptoms\n• Consider getting tested\n\nSeek immediate medical attention if you experience difficulty breathing, persistent chest pain, confusion, or bluish lips or face."
+
+        elif any(word in user_input for word in ["stomach", "diarrhea", "vomit", "nausea"]):
+            response = "For stomach issues like nausea, vomiting, or diarrhea:\n\n• Stay hydrated with small sips of water or clear fluids\n• Try bland foods like crackers, toast, or rice when you can eat\n• Avoid dairy, fatty, spicy, or highly seasoned foods\n• Rest and monitor symptoms\n\nSeek medical attention if you have severe abdominal pain, blood in vomit or stool, signs of dehydration (extreme thirst, dry mouth, little/no urination), or symptoms last more than 2 days."
+
+        elif any(word in user_input for word in ["rash", "skin", "itch", "hives"]):
+            response = "For skin rashes or irritation:\n\n• Avoid scratching to prevent infection\n• Apply cool compresses for relief\n• Consider over-the-counter antihistamines or hydrocortisone cream for itching\n• Use mild, fragrance-free soaps and moisturizers\n\nSeek medical attention if the rash is widespread, painful, blistering, accompanied by fever, or if you experience difficulty breathing or swelling of face/throat."
+
+        elif any(word in user_input for word in ["blood pressure", "hypertension"]):
+            response = "General guidelines for managing blood pressure include:\n\n• Regular physical activity\n• Healthy diet low in sodium and rich in fruits and vegetables\n• Maintaining a healthy weight\n• Limiting alcohol consumption\n• Managing stress\n• Taking prescribed medications as directed\n\nRegular monitoring and check-ups with your healthcare provider are essential for managing blood pressure effectively."
+
+        elif any(word in user_input for word in ["diabetes", "blood sugar"]):
+            response = "For diabetes management, general guidelines include:\n\n• Monitor blood glucose regularly\n• Follow a balanced diet as recommended by your healthcare provider\n• Regular physical activity\n• Take medications as prescribed\n• Regular check-ups with your healthcare team\n\nContact your healthcare provider for personalized advice on managing your specific condition."
+
+        elif any(word in user_input for word in ["depression", "anxiety", "mental health"]):
+            response = "For mental health concerns such as depression or anxiety:\n\n• Consider speaking with a mental health professional\n• Practice self-care including regular exercise and adequate sleep\n• Stay connected with supportive friends and family\n• Mindfulness and relaxation techniques may help manage symptoms\n\nIf you're experiencing thoughts of harming yourself, please contact a crisis helpline immediately or go to your nearest emergency room."
+
+        elif any(word in user_input for word in ["exercise", "workout", "fitness"]):
+            response = "Regular physical activity is important for overall health. General recommendations include:\n\n• At least 150 minutes of moderate aerobic activity or 75 minutes of vigorous activity weekly\n• Muscle-strengthening activities 2+ days per week\n• Balance exercises for older adults\n\nStart gradually if you're new to exercise, and consult with a healthcare provider before beginning a new fitness routine, especially if you have existing health conditions."
+
+        elif any(word in user_input for word in ["diet", "nutrition", "eat", "food"]):
+            response = "General nutritional guidance includes:\n\n• Eat a variety of fruits, vegetables, whole grains, and lean proteins\n• Limit added sugars, sodium, and unhealthy fats\n• Stay hydrated by drinking plenty of water\n• Practice portion control\n\nFor personalized dietary advice, especially for specific health conditions, consult with a registered dietitian or your healthcare provider."
+
+        elif any(word in user_input for word in ["thank", "thanks"]):
+            response = "You're welcome! If you have any other health questions, feel free to ask. Remember to consult with a healthcare professional for personalized medical advice."
+
+        elif any(word in user_input for word in ["bye", "goodbye"]):
+            response = "Take care of yourself! Remember to consult with healthcare professionals for personalized medical advice. Feel free to return if you have more questions in the future."
+
+        else:
+            response = "I understand you have a health concern, but I may need more specific information to provide general guidance. Please note that I can only offer general health information and cannot diagnose conditions or prescribe treatments. For any serious or persistent symptoms, please consult with a healthcare professional."
+
+        # Add a short delay before responding to simulate processing time
+        time.sleep(random.uniform(0.5, 1.5))
+        self.display_bot_message(response)
+
+if __name__ == "__main__":
+    root = tk.Tk()
+    app = MedBot(root)
+    root.mainloop()
