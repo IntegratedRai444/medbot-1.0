@@ -1,0 +1,85 @@
+# MedBot - Your Virtual Healthcare Assistant
+
+import gradio as gr
+import random
+import time
+
+# Knowledge base with cause and concern
+response_db = {
+    "fever": {
+        "cause": "Fever is usually a sign that your body is fighting an infection or inflammation.",
+        "concern": "Stay hydrated, get plenty of rest, and consider taking paracetamol. If it lasts more than 3 days or is above 103°F (39.4°C), consult a doctor."
+    },
+    "headache": {
+        "cause": "Headaches can be caused by stress, dehydration, lack of sleep, or eye strain.",
+        "concern": "Drink water, rest in a quiet dark room, and consider a mild painkiller. See a doctor if it’s severe or recurring frequently."
+    },
+    "cold": {
+        "cause": "A common cold is usually caused by viral infections affecting the upper respiratory tract.",
+        "concern": "Rest, stay warm, drink fluids, and try steam inhalation. Usually clears in 5–7 days."
+    },
+    "cough": {
+        "cause": "Coughing can be caused by viral infections, throat irritation, or allergies.",
+        "concern": "Stay hydrated, avoid smoking or dust, and use lozenges. If it lasts more than a week, consult a doctor."
+    },
+    "stomach pain": {
+        "cause": "Common causes include indigestion, gas, infection, or sometimes stress.",
+        "concern": "Try a bland diet, stay hydrated, and rest. Sharp or persistent pain needs medical attention."
+    },
+    "sore throat": {
+        "cause": "Often caused by viral infections or irritation from dry air or allergens.",
+        "concern": "Warm salt water gargles, lozenges, and hydration can help. If it lasts over 3 days or includes fever, see a doctor."
+    },
+    "vomiting": {
+        "cause": "May result from food poisoning, infections, or stomach irritation.",
+        "concern": "Rest, take small sips of water or ORS, avoid food for a while. Consult a doctor if it doesn’t stop or includes blood/dehydration."
+    },
+    "diarrhea": {
+        "cause": "Often caused by infections, poor diet, or contaminated food/water.",
+        "concern": "Drink plenty of fluids or ORS, avoid spicy food, and rest. Visit a doctor if it lasts more than 2 days or causes dehydration."
+    },
+    "default": {
+        "cause": "I'm not sure about that symptom.",
+        "concern": "Please consult a qualified healthcare provider for accurate advice."
+    }
+}
+
+# Generate MedBot's response
+def medbot_response(user_input):
+    user_input = user_input.lower()
+
+    # Greeting detection
+    greetings = ["hello", "hi", "hey", "good morning", "good evening"]
+    if any(greet in user_input for greet in greetings):
+        return "Hello! I'm MedBot, your virtual healthcare assistant. How can I assist you today?"
+
+    for keyword in response_db:
+        if keyword in user_input:
+            cause = response_db[keyword]["cause"]
+            concern = response_db[keyword]["concern"]
+            return f"*Possible Cause: {cause}\n\nSuggested Concern*: {concern}"
+
+    # Default response
+    default = response_db["default"]
+    return f"*Possible Cause: {default['cause']}\n\nSuggested Concern*: {default['concern']}"
+
+# Chat interface
+def chat_interface(message, history):
+    bot_reply = medbot_response(message)
+    history.append((message, bot_reply))
+    time.sleep(0.5)
+    return "", history
+
+# Gradio UI
+with gr.Blocks(theme=gr.themes.Soft()) as interface:
+    gr.Markdown("## 🤖 MedBot - Your Virtual Healthcare Assistant")
+    gr.Markdown("*Ask health-related questions like:* I have a fever, What to do for headache, How to treat cough, etc.")
+
+    chatbot = gr.Chatbot()
+    msg = gr.Textbox(label="Ask MedBot something...", placeholder="Type your symptoms or questions here...")
+    clear_btn = gr.Button("Clear Chat")
+
+    msg.submit(chat_interface, [msg, chatbot], [msg, chatbot])
+    clear_btn.click(lambda: [], None, chatbot)
+
+interface.launch()
